@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Descarga de datos en Excel</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.min.css">
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script> <!-- Este js debe estar en la carpeta static -->
+</head>
+<body>
+    <div style="text-align: center;">
+        <h1>Descarga de datos en Excel</h1>
+        <button id="download-btn">Descargar Excel</button>
+    </div>
+
+    <script>
+        document.getElementById('download-btn').addEventListener('click', function() {
+            var currentPage = 1;
+            var pageSize = 100;
+            var totalPages = 0;
+
+            var downloadNextPage = function() {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', '/get_dummy_data/?page=' + currentPage + '&page_size=' + pageSize, true);
+                xhr.responseType = 'json';
+
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        var data = xhr.response;
+
+                        var workbook = XLSX.utils.book_new();
+                        var worksheet = XLSX.utils.json_to_sheet(data);
+                        XLSX.utils.book_append_sheet(workbook, worksheet, 'DummyData');
+
+                        XLSX.writeFile(workbook, 'dummydata_page_' + currentPage + '.xlsx');
+
+                        currentPage++;
+
+                        if (currentPage <= totalPages) {
+                            downloadNextPage();
+                        }
+                    }
+                };
+
+                xhr.send();
+            };
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/get_dummy_data/?page=1&page_size=' + pageSize, true);
+            xhr.responseType = 'json';
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var data = xhr.response;
+                    totalPages = Math.ceil(data.length / pageSize);
+
+                    var workbook = XLSX.utils.book_new();
+                    var worksheet = XLSX.utils.json_to_sheet(data);
+                    XLSX.utils.book_append_sheet(workbook, worksheet, 'DummyData');
+
+                    XLSX.writeFile(workbook, 'dummydata_page_1.xlsx');
+
+                    if (totalPages > 1) {
+                        downloadNextPage();
+                    }
+                }
+            };
+
+            xhr.send();
+        });
+    </script>
+</body>
+</html>
